@@ -1,0 +1,18 @@
+#!/bin/sh
+
+choice=$(ls ~/Documents/theory/readings | sed -E 's/\..+$//' | dmenu -nb '#445349' -sf '#445349' -sb '#F0C674' -nf '#F0C674')
+if [[ "$choice" != "" ]]; then
+    pdf=$(ls -d ~/Documents/theory/readings/* | grep $choice)
+    # $(zathura $pdf </dev/null >/dev/null 2>&1 & disown -h)
+    mda=$(echo $choice.md)
+    md=~/Documents/theory/notes/$mda
+    #touch $md
+    # nvim $md
+    mv $pdf ~/Documents/theory/readings/$1.pdf
+    mv $md  ~/Documents/theory/notes/$1.md
+
+    grep -RiIl "$choice" ~/Documents/theory/* | xargs sed -i "s/$choice/$1/g"
+    find ~/Documents/theory/ -name "$choice*" | sed -e "p;s/$choice/$1/" | xargs -n2 mv
+else
+    nvim ~/Documents/theory/notes
+fi

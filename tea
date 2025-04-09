@@ -1,0 +1,104 @@
+#!/bin/sh
+
+file=~/tea.csv
+
+if [ ! -e "$file" ]; then
+    touch "$file"
+    echo "Date,Time,Type,Size" >> $file
+fi
+
+error_message=$'You did not drink tea today yet
+Pick one of these:
+        b = "black"
+        g = "green"
+        ob = "oolong ball"
+        os = "oolong strip"
+        pa = "puerh raw"
+        pi = "puerh ripe"
+        w = "white"
+        h = "herbal"
+
+Also pick a size:
+        1 = "gaiwan cup"
+        2 = "wood cup"
+        3 = "tomato cup"
+        4 = "gaiwan pot"
+        5 = "teacup"
+        6 = "mug"'
+
+if [ ${#} -lt 1 ]; then
+    last=$(tail -n 1 $file | sed -E 's/,.+$//')
+    if [ $(date "+%m/%d/%Y") != $last ]; then
+        echo "$error_message"
+        exit 1
+    fi
+    type=$(tail -n 1 $file | sed 's/[^,]*,//' | sed 's/[^,]*,//')
+    text=$(date "+%m/%d/%Y,%T,")
+    text="$text$type"
+    echo $text >> $file
+    echo "Last 3 cups of tea drunk:"
+    tail -n 3 $file
+    exit 0
+fi
+
+case $1 in
+    b) 
+        type="black"
+        ;;
+    g)
+        type="green"
+        ;;
+    ob)
+        type="oolong ball"
+        ;;
+    os)
+        type="oolong strip"
+        ;;
+    pa)
+        type="puerh raw"
+        ;;
+    pi)
+        type="puerh ripe"
+        ;;
+    w)
+        type="white"
+        ;;
+    h)
+        type="herbal"
+        ;;
+    *)
+        echo "$error_message"
+        exit 1
+        ;;
+esac
+
+case $2 in
+    1) 
+        size="gaiwan teacup"
+        ;;
+    2)
+        size="wood cup"
+        ;;
+    3)
+        size="tomato cup"
+        ;;
+    4)
+        size="gaiwan pot"
+        ;;
+    5)
+        size="teacup"
+        ;;
+    6)
+        size="mug"
+        ;;
+    *)
+        echo "$error_message"
+        exit 1
+        ;;
+esac
+
+text=$(date "+%m/%d/%Y,%T,")
+text="$text$type,$size"
+echo $text >> $file
+echo "Last 3 cups of tea drunk:"
+tail -n 3 $file
