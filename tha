@@ -1,0 +1,140 @@
+#!/bin/sh
+# Args: doi/isbn/arxiv/title 
+
+bib_path="/home/lizzy/Documents/theory/sources.bib"
+tmp_path="/tmp/temp.bib"
+
+# # Step 1: Figure out whether input DOI, ISBN, title, arxiv
+#
+# option="${1}"
+# case ${option} in
+#     *arxiv*) echo "Doing an arxiv"
+#         vibes="arxiv"
+#         echo "Eat shit, this isn't implemented yet"
+#         exit 1
+#         ;;
+#     *doi*) echo "doi url"
+#         vibes="doi"
+#         url="${option}"
+#         number="$(echo "$url" | sed 's/.*\.org\/\(.*\)/\1/')"
+#         echo $url
+#         echo $number
+#         ;;
+#     10.*) echo "doi number"
+#         vibes="doi"
+#         number="${option}"
+#         url="https://doi.org/$number"
+#         echo $url
+#         echo $number
+#         ;;
+#     [0-9][0-9][0-9]*) echo "isbn"
+#         vibes="isbn"
+#         echo "Eat shit, this isn't implemented yet"
+#         exit 1
+#         ;;
+#     *) echo "Crying, pissing, and shitting"
+#         exit 1
+# esac
+#
+# # Step 2: Obtain bibtex citation + format
+#
+# case ${vibes} in
+#     "arxiv") echo "Doing an arxiv"
+#         vibes="arxiv"
+#         echo "Eat shit, this isn't implemented yet"
+#         exit 1
+#         ;;
+#     "doi") echo "requesting ${url}"
+#         art="$(curl -LH "Accept: application/x-bibtex" "${url}")"
+#         ;;
+#     "isbn") echo "isbn"
+#         vibes="isbn"
+#         echo "Eat shit, this isn't implemented yet"
+#         exit 1
+#         ;;
+#     *) echo "How did you get here"
+#         exit 1
+# esac
+
+tabbed="@article{palamarchuk2025visualizing,
+    title = {Temporal Topic Embeddings with a Compass},
+    volume = {31},
+    issn = {2160-9306},
+    url = {http://dx.doi.org/10.1109/TVCG.2024.3456143},
+    doi = {10.1109/tvcg.2024.3456143},
+    number = {1},
+    journal = {IEEE Transactions on Visualization and Computer Graphics},
+    publisher = {Institute of Electrical and Electronics Engineers (IEEE)},
+    author = {Palamarchuk, Daniel and Williams, Lemara and Mayer, Brian and Danielson, Thomas and Faust, Rebecca and Deschaine, Larry and North, Chris},
+    year = {2025},
+    month = {jan},
+    pages = {272–282},
+}"
+
+# tabbed="$(echo $art | sed 's/@\([a-zA-Z]*\){\([a-zA-Z0-9_]*\), title/@\1{\2,\n    title/' | sed 's/month=\([a-zA-Z0-9]*\),/month={\1},/'| sed 's/DOI/doi/' | sed 's/ISSN/issn/' | sed 's/}, /},\n    /g' | sed 's/} }/},\n}/' | sed 's/=/ = /')"
+lastname="$(echo "$tabbed" | grep -e '^    author' | sed 's/author = {\([A-Za-z ]*\),.*/\1/' | tr '[:upper:]' '[:lower:]')"
+echo $lastname
+year="$(echo "$tabbed" | grep -e '^    year' | sed 's/year = {\([0-9]*\).*/\1/')"
+echo $year
+title="$(echo "$tabbed" | grep -e '^    title' | sed 's/title = {\(.*\)},$/\1/'| tr '[:upper:]' '[:lower:]')"
+echo $title
+
+stopwordlist='a an the with do does by for with to'
+list=( $title )
+for word in "${list[@]}"; do
+    if [[ ! " $stopwordlist " =~ .*\ $word\ .* ]]; then
+        break
+    fi
+done
+
+echo $lastname$year$word 
+key="$(echo $lastname$year$word | tr -cd '[:alnum:]')"
+echo $key
+
+tabbed="$(echo "$tabbed" | sed 's/@\([a-zA-Z]*\){.*/@\1{'"$key"',/')"
+# echo "$tabbed"
+
+
+# Step 3: ensure everything is correct through nvim
+
+# A couple enters to ensure whitespacing
+final_entry=$(echo "$tabbed"$'\n'$'\n' | vipe)
+final_entry=$(echo "$final_entry
+
+")
+echo "$final_entry"
+final_key="$(echo "$final_entry" | grep '^@.*' | sed 's/@[a-zA-Z]*{\(.*\),/\1/' )"
+echo "$final_key"
+# Step 4: add to bibliography
+
+author_list=$(grep '^@' "$bib_path" | sed 's/@[a-zA-Z]*{\(.*\),/\1/')
+
+# Logic to see if at beginning or end before doing binary search
+if [[ "$final_key" < $(echo "$author_list" | head -n 1) ]]; then
+    echo "$final_entry" | cat - "$bib_path" > "$tmp_path"
+    mv "$tmp_path" "$bib_path"
+    echo "Placing at the beginning"
+elif [[ "$final_key" > $(echo "$author_list" | tail -n 1) ]]; then
+    echo "$final_entry" | cat "$bib_path" - > "$tmp_path"
+    mv "$tmp_path" "$bib_path"
+    echo "Placing at the end"
+else
+    # Can do binary search but screw that
+    for next_key in $author_list; do
+        if [[ "$final_key" < "$next_key" ]]; then
+            next_line=$(grep "$next_key" $bib_path | head -n 1)
+            next_line="${next_line:1}"
+            break
+        fi
+    done
+    # echo $next_line
+    next_ln=$(grep -n "$next_line" "$bib_path" | head -n 1 | sed 's/\([0-9]*\):.*/\1/')
+    head -n "$((next_ln - 1))" "$bib_path" > /tmp/head.bib
+    tail -n +"$next_ln" "$bib_path" > /tmp/tail.bib
+    echo "$final_entry
+" | cat /tmp/head.bib - /tmp/tail.bib > "$bib_path"
+    echo "Placing before $next_key"
+fi
+
+# Step 5: add to todo or elsewhere
+
