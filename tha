@@ -1,103 +1,122 @@
 #!/bin/sh
-# Args: doi/isbn/arxiv/title 
+# Args: doi/isbn/arxiv/title [optional description]
+
+# This is done in case of a description
+if [[ "$#" -eq 2 ]]; then
+
+    description=" - ${2}"
+else
+    description=""
+fi
 
 bib_path="/home/lizzy/Documents/theory/sources.bib"
 tmp_path="/tmp/temp.bib"
+todo_path="/home/lizzy/Documents/theory/wiki/todo.md"
+
+
+# isbn=0226511928
+# url=http://openlibrary.org/search.json?q=$isbn\&fields=title,author_name,publish_date,publisher,isbn,publish_place
+# out="$(curl $url)"
+# echo "$out" | python3 -c "import sys, json; a = json.load(sys.stdin); relevant=a['docs'][0]; title=relevant['title']; year=relevant['publish_date'][0]; authors=' and '.join([f'{name[1]}, {name[0]}' for name in relevant['author_name']])"
+#echo "$out" | python3 -c "import sys, json; a = json.load(sys.stdin); relevant=a['docs'][0]; title=relevant['title']; year=relevant['publish_date'][0]; authors=' and '.join([f'{name.split(' ')[1]}, {name.split(' ')[0]}' for name in relevant['author_name']]);publisher=','.join(relevant['publisher']);isbn='$isbn';publish_place=','.join(relevant['publish_place']);bibkey=authors.split(',')[0].lower()+str(year)+title.split(' ')[0].lower();print('@book{'+bibkey+',\n    title = {'+title+'},\n    year = {'+str(year)+'},\n    publisher = {'+publisher+'},\n    isbn = {'+str(isbn)+'},\n    location = {'+publish_place+'},\n}')"
 
 # # Step 1: Figure out whether input DOI, ISBN, title, arxiv
 #
-# option="${1}"
-# case ${option} in
-#     *arxiv*) echo "Doing an arxiv"
-#         vibes="arxiv"
-#         echo "Eat shit, this isn't implemented yet"
-#         exit 1
-#         ;;
-#     *doi*) echo "doi url"
-#         vibes="doi"
-#         url="${option}"
-#         number="$(echo "$url" | sed 's/.*\.org\/\(.*\)/\1/')"
-#         echo $url
-#         echo $number
-#         ;;
-#     10.*) echo "doi number"
-#         vibes="doi"
-#         number="${option}"
-#         url="https://doi.org/$number"
-#         echo $url
-#         echo $number
-#         ;;
-#     [0-9][0-9][0-9]*) echo "isbn"
-#         vibes="isbn"
-#         echo "Eat shit, this isn't implemented yet"
-#         exit 1
-#         ;;
-#     *) echo "Crying, pissing, and shitting"
-#         exit 1
-# esac
-#
-# # Step 2: Obtain bibtex citation + format
-#
-# case ${vibes} in
-#     "arxiv") echo "Doing an arxiv"
-#         vibes="arxiv"
-#         echo "Eat shit, this isn't implemented yet"
-#         exit 1
-#         ;;
-#     "doi") echo "requesting ${url}"
-#         art="$(curl -LH "Accept: application/x-bibtex" "${url}")"
-#         ;;
-#     "isbn") echo "isbn"
-#         vibes="isbn"
-#         echo "Eat shit, this isn't implemented yet"
-#         exit 1
-#         ;;
-#     *) echo "How did you get here"
-#         exit 1
-# esac
+option="${1}"
+case ${option} in
+    *arxiv*) echo "Doing an arxiv"
+        vibes="arxiv"
+        echo "Eat shit, this isn't implemented yet"
+        exit 1
+        ;;
+    *doi*) echo "doi url"
+        vibes="doi"
+        url="${option}"
+        number="$(echo "$url" | sed 's/.*\.org\/\(.*\)/\1/')"
+        echo $url
+        echo $number
+        ;;
+    10.*) echo "doi number"
+        vibes="doi"
+        number="${option}"
+        url="https://doi.org/$number"
+        echo $url
+        echo $number
+        ;;
+    [0-9][0-9][0-9]*) echo "isbn"
+        vibes="isbn"
+        echo "Eat shit, this isn't implemented yet"
+        exit 1
+        ;;
+    https://*) echo "url generally"
+        vibes="website"
+        url="${option}"
+        ;;
+    *) echo "Crying, pissing, and shitting"
+        exit 1
+esac
 
-tabbed="@article{palamarchuk2025visualizing,
-    title = {Temporal Topic Embeddings with a Compass},
-    volume = {31},
-    issn = {2160-9306},
-    url = {http://dx.doi.org/10.1109/TVCG.2024.3456143},
-    doi = {10.1109/tvcg.2024.3456143},
-    number = {1},
-    journal = {IEEE Transactions on Visualization and Computer Graphics},
-    publisher = {Institute of Electrical and Electronics Engineers (IEEE)},
-    author = {Palamarchuk, Daniel and Williams, Lemara and Mayer, Brian and Danielson, Thomas and Faust, Rebecca and Deschaine, Larry and North, Chris},
-    year = {2025},
-    month = {jan},
-    pages = {272–282},
+## Step 2: Obtain bibtex citation + format
+
+case ${vibes} in
+    "arxiv") echo "Doing an arxiv"
+        echo "Eat shit, this isn't implemented yet"
+        exit 1
+        ;;
+    "doi") echo "requesting ${url}"
+        art="$(curl -LH "Accept: application/x-bibtex" "${url}")"
+        tabbed="$(echo $art | sed 's/@\([a-zA-Z]*\){\([a-zA-Z0-9_]*\), title/@\1{\2,\n    title/' | sed 's/month=\([a-zA-Z0-9]*\),/month={\1},/'| sed 's/DOI/doi/' | sed 's/ISSN/issn/' | sed 's/}, /},\n    /g' | sed 's/} }/},\n}/' | sed 's/=/ = /')"
+    automations=true
+        ;;
+    "isbn") echo "isbn"
+        echo "Eat shit, this isn't implemented yet"
+        exit 1
+        ;;
+    "website")
+        tabbed="@online{,
+    author = {},
+    title = {},
+    year = {},
+    month = {},
+    publisher = {},
+    url = {$url},
 }"
+    automations=false
+        ;;
+    *) echo "How did you get here"
+        exit 1
+esac
 
-# tabbed="$(echo $art | sed 's/@\([a-zA-Z]*\){\([a-zA-Z0-9_]*\), title/@\1{\2,\n    title/' | sed 's/month=\([a-zA-Z0-9]*\),/month={\1},/'| sed 's/DOI/doi/' | sed 's/ISSN/issn/' | sed 's/}, /},\n    /g' | sed 's/} }/},\n}/' | sed 's/=/ = /')"
-lastname="$(echo "$tabbed" | grep -e '^    author' | sed 's/author = {\([A-Za-z ]*\),.*/\1/' | tr '[:upper:]' '[:lower:]')"
-echo $lastname
-year="$(echo "$tabbed" | grep -e '^    year' | sed 's/year = {\([0-9]*\).*/\1/')"
-echo $year
-title="$(echo "$tabbed" | grep -e '^    title' | sed 's/title = {\(.*\)},$/\1/'| tr '[:upper:]' '[:lower:]')"
-echo $title
 
-stopwordlist='a an the with do does by for with to'
-list=( $title )
-for word in "${list[@]}"; do
-    if [[ ! " $stopwordlist " =~ .*\ $word\ .* ]]; then
-        break
-    fi
-done
+if $automations; then
+    lastname="$(echo "$tabbed" | grep -e '^    author' | sed 's/author = {\([A-Za-z ]*\),.*/\1/' | tr '[:upper:]' '[:lower:]')"
+    echo $lastname
+    year="$(echo "$tabbed" | grep -e '^    year' | sed 's/year = {\([0-9]*\).*/\1/')"
+    echo $year
+    title="$(echo "$tabbed" | grep -e '^    title' | sed 's/title = {\(.*\)},$/\1/'| tr '[:upper:]' '[:lower:]')"
+    echo $title
 
-echo $lastname$year$word 
-key="$(echo $lastname$year$word | tr -cd '[:alnum:]')"
-echo $key
+    stopwordlist='a an the with do does by for with to'
+    list=( $title )
+    for word in "${list[@]}"; do
+        if [[ ! " $stopwordlist " =~ .*\ $word\ .* ]]; then
+            break
+        fi
+    done
 
-tabbed="$(echo "$tabbed" | sed 's/@\([a-zA-Z]*\){.*/@\1{'"$key"',/')"
-# echo "$tabbed"
+    echo $lastname$year$word 
+    key="$(echo $lastname$year$word | tr -cd '[:alnum:]')"
+    echo $key
+
+    tabbed="$(echo "$tabbed" | sed 's/@\([a-zA-Z]*\){.*/@\1{'"$key"',/')"
+    # echo "$tabbed"
+fi
 
 
 # Step 3: ensure everything is correct through nvim
 
 # A couple enters to ensure whitespacing
+echo $tabbed
 final_entry=$(echo "$tabbed"$'\n'$'\n' | vipe)
 final_entry=$(echo "$final_entry
 
@@ -138,3 +157,7 @@ fi
 
 # Step 5: add to todo or elsewhere
 
+echo "[[notes/$final_key|$final_key]]$description" >> "$todo_path"
+
+# Copies to clipboard
+echo "$final_key" | xclip -selection clipboard

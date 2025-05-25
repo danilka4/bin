@@ -1,6 +1,5 @@
-#!/usr/bin/python3
+#!/home/lizzy/Documents/venv/bin/python3
 import sys
-import pandas as pd
 import os
 from anki.collection import Collection, ImportCsvRequest, Delimiter
 from anki.syncserver import run_sync_server
@@ -25,16 +24,6 @@ for line in sys.stdin:
 if not title or lc > 30:
     print("Exiting")
     exit()
-
-# fname = "/home/lizzy/Documents/theory/notes.csv"
-# if os.path.isfile(fname):
-#     df = pd.read_csv(fname)
-# else:
-#     df = pd.DataFrame(columns=pd.Index(["title", "content"]))
-
-# df = df[df["title"] != title]
-# df = pd.concat([df, pd.DataFrame([[title, content]], columns=df.columns)], ignore_index=True)
-# df.to_csv(fname, index=False)
 try:
     col = Collection("/home/lizzy/.local/share/Anki2/User 1/collection.anki2")
 except Exception as e:
