@@ -14,11 +14,6 @@ tmp_path="/tmp/temp.bib"
 todo_path="/home/lizzy/Documents/theory/wiki/todo.md"
 
 
-# isbn=0226511928
-# url=http://openlibrary.org/search.json?q=$isbn\&fields=title,author_name,publish_date,publisher,isbn,publish_place
-# out="$(curl $url)"
-# echo "$out" | python3 -c "import sys, json; a = json.load(sys.stdin); relevant=a['docs'][0]; title=relevant['title']; year=relevant['publish_date'][0]; authors=' and '.join([f'{name[1]}, {name[0]}' for name in relevant['author_name']])"
-#echo "$out" | python3 -c "import sys, json; a = json.load(sys.stdin); relevant=a['docs'][0]; title=relevant['title']; year=relevant['publish_date'][0]; authors=' and '.join([f'{name.split(' ')[1]}, {name.split(' ')[0]}' for name in relevant['author_name']]);publisher=','.join(relevant['publisher']);isbn='$isbn';publish_place=','.join(relevant['publish_place']);bibkey=authors.split(',')[0].lower()+str(year)+title.split(' ')[0].lower();print('@book{'+bibkey+',\n    title = {'+title+'},\n    year = {'+str(year)+'},\n    publisher = {'+publisher+'},\n    isbn = {'+str(isbn)+'},\n    location = {'+publish_place+'},\n}')"
 
 # # Step 1: Figure out whether input DOI, ISBN, title, arxiv
 #
@@ -45,8 +40,9 @@ case ${option} in
         ;;
     [0-9][0-9][0-9]*) echo "isbn"
         vibes="isbn"
-        echo "Eat shit, this isn't implemented yet"
-        exit 1
+        # isbn=0226511928
+        isbn="${option}"
+        url="http://openlibrary.org/search.json?q=${isbn}&fields=title,subtitle,author_name,publish_year,publisher,isbn,publish_place"
         ;;
     https://*) echo "url generally"
         vibes="website"
@@ -55,6 +51,7 @@ case ${option} in
     *) echo "Crying, pissing, and shitting"
         exit 1
 esac
+
 
 ## Step 2: Obtain bibtex citation + format
 
@@ -69,8 +66,9 @@ case ${vibes} in
     automations=true
         ;;
     "isbn") echo "isbn"
-        echo "Eat shit, this isn't implemented yet"
-        exit 1
+        art="$(curl $url)"
+        tabbed="$(echo "$art" | python3 -c "import sys, json; a = json.load(sys.stdin); relevant=a['docs'][0]; title=relevant['title']; subtitle = relevant['subtitle'] if 'subtitle' in relevant.keys() else ''; year=relevant['publish_year'][0]; authors=' and '.join([f'{name.split(' ')[1]}, {name.split(' ')[0]}' for name in relevant['author_name']]);publisher=','.join(relevant['publisher']);isbn='$isbn';publish_place=','.join(relevant['publish_place']);print('@book{heheheha,\n    title = {'+title+'},\n    subtitle = {'+subtitle+'},\n    author = {'+authors+'},\n    year = {'+str(year)+'},\n    publisher = {'+publisher+'},\n    isbn = {'+str(isbn)+'},\n    location = {'+publish_place+'},\n}')")" # removed heheheha because author logic added after
+        authomations=true
         ;;
     "website")
         tabbed="@online{,
@@ -118,6 +116,11 @@ fi
 # A couple enters to ensure whitespacing
 echo $tabbed
 final_entry=$(echo "$tabbed"$'\n'$'\n' | vipe)
+if [ -z "${final_entry}" ]; then
+    echo "Empty string"
+    exit 1
+fi
+
 final_entry=$(echo "$final_entry
 
 ")
