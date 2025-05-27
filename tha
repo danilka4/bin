@@ -19,6 +19,9 @@ todo_path="/home/lizzy/Documents/theory/wiki/todo.md"
 #
 option="${1}"
 case ${option} in
+    stdin) echo "Reading from stdin"
+        vibes="stdin"
+        ;;
     *arxiv*) echo "Doing an arxiv"
         vibes="arxiv"
         echo "Eat shit, this isn't implemented yet"
@@ -56,6 +59,10 @@ esac
 ## Step 2: Obtain bibtex citation + format
 
 case ${vibes} in
+    stdin) echo "Doing stdin"
+        tabbed="$(</dev/stdin)"
+        automations=true
+        ;;
     "arxiv") echo "Doing an arxiv"
         echo "Eat shit, this isn't implemented yet"
         exit 1
@@ -87,12 +94,12 @@ esac
 
 
 if $automations; then
-    lastname="$(echo "$tabbed" | grep -e '^    author' | sed 's/author = {\([A-Za-z ]*\),.*/\1/' | tr '[:upper:]' '[:lower:]')"
-    echo $lastname
+    lastname="$(echo "$tabbed" | grep -e '^    author' | sed 's/author = {*\([A-Za-z ]*\)[},\.].*/\1/' | tr '[:upper:]' '[:lower:]')"
+    echo "Last name: $lastname"
     year="$(echo "$tabbed" | grep -e '^    year' | sed 's/year = {\([0-9]*\).*/\1/')"
-    echo $year
-    title="$(echo "$tabbed" | grep -e '^    title' | sed 's/title = {\(.*\)},$/\1/'| tr '[:upper:]' '[:lower:]')"
-    echo $title
+    echo "Year: $year"
+    title="$(echo "$tabbed" | grep -e '^    title' | sed 's/title = {\(.*\)},$/\1/' | sed 's/://g' | tr '[:upper:]' '[:lower:]')"
+    echo "Title: $title"
 
     stopwordlist='a an the with do does by for with to'
     list=( $title )
@@ -102,6 +109,7 @@ if $automations; then
         fi
     done
 
+    echo HEHEHEHA
     echo $lastname$year$word 
     key="$(echo $lastname$year$word | tr -cd '[:alnum:]')"
     echo $key
@@ -114,8 +122,14 @@ fi
 # Step 3: ensure everything is correct through nvim
 
 # A couple enters to ensure whitespacing
-echo $tabbed
+echo "HERE is what it looks like"
+echo "$tabbed"
+# if [ $vibes = "stdin" ]; then
+#     echo "HEHEHEHA"
+# else
+# fi
 final_entry=$(echo "$tabbed"$'\n'$'\n' | vipe)
+
 if [ -z "${final_entry}" ]; then
     echo "Empty string"
     exit 1
