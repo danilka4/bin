@@ -12,7 +12,7 @@ fi
 bib_path="/home/lizzy/Documents/theory/sources.bib"
 tmp_path="/tmp/temp.bib"
 todo_path="/home/lizzy/Documents/theory/wiki/todo.md"
-
+note_path="/home/lizzy/Documents/theory/notes"
 
 
 # # Step 1: Figure out whether input DOI, ISBN, title, arxiv
@@ -74,7 +74,7 @@ case ${vibes} in
         ;;
     "isbn") echo "isbn"
         art="$(curl $url)"
-        tabbed="$(echo "$art" | python3 -c "import sys, json; a = json.load(sys.stdin); relevant=a['docs'][0]; title=relevant['title']; subtitle = relevant['subtitle'] if 'subtitle' in relevant.keys() else ''; year=relevant['publish_year'][0]; authors=' and '.join([f'{name.split(' ')[1]}, {name.split(' ')[0]}' for name in relevant['author_name']]);publisher=','.join(relevant['publisher']);isbn='$isbn';publish_place=','.join(relevant['publish_place']);print('@book{heheheha,\n    title = {'+title+'},\n    subtitle = {'+subtitle+'},\n    author = {'+authors+'},\n    year = {'+str(year)+'},\n    publisher = {'+publisher+'},\n    isbn = {'+str(isbn)+'},\n    location = {'+publish_place+'},\n}')")" # removed heheheha because author logic added after
+        tabbed="$(echo "$art" | python3 -c "import sys, json; a = json.load(sys.stdin); relevant=a['docs'][0]; title=relevant['title']; subtitle = relevant['subtitle'] if 'subtitle' in relevant.keys() else ''; year=relevant['publish_year'][0]; authors=' and '.join([f'{name.split(' ')[1]}, {name.split(' ')[0]}' for name in relevant['author_name']]);publisher=','.join(relevant['publisher']);isbn='$isbn';publish_place=','.join(relevant['publish_place']) if 'publish_place' in relevant.keys() else '';print('@book{heheheha,\n    title = {'+title+'},\n    subtitle = {'+subtitle+'},\n    author = {'+authors+'},\n    year = {'+str(year)+'},\n    publisher = {'+publisher+'},\n    isbn = {'+str(isbn)+'},\n    location = {'+publish_place+'},\n}')")" # removed heheheha because author logic added after
         authomations=true
         ;;
     "website")
@@ -109,8 +109,6 @@ if $automations; then
         fi
     done
 
-    echo HEHEHEHA
-    echo $lastname$year$word 
     key="$(echo $lastname$year$word | tr -cd '[:alnum:]')"
     echo $key
 
@@ -122,12 +120,6 @@ fi
 # Step 3: ensure everything is correct through nvim
 
 # A couple enters to ensure whitespacing
-echo "HERE is what it looks like"
-echo "$tabbed"
-# if [ $vibes = "stdin" ]; then
-#     echo "HEHEHEHA"
-# else
-# fi
 final_entry=$(echo "$tabbed"$'\n'$'\n' | vipe)
 
 if [ -z "${final_entry}" ]; then
@@ -138,7 +130,6 @@ fi
 final_entry=$(echo "$final_entry
 
 ")
-echo "$final_entry"
 final_key="$(echo "$final_entry" | grep '^@.*' | sed 's/@[a-zA-Z]*{\(.*\),/\1/' )"
 echo "$final_key"
 # Step 4: add to bibliography
@@ -178,3 +169,4 @@ echo "[[notes/$final_key|$final_key]]$description" >> "$todo_path"
 
 # Copies to clipboard
 echo "$final_key" | xclip -selection clipboard
+nvim "$note_path/$final_key.md"
