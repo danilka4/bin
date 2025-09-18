@@ -1,0 +1,10 @@
+#!/bin/sh
+cd ~/Documents/theory/essays/presentations/
+next_tuesday="$(date -d "next Tuesday" +"%Y-%m-%d")"
+filename="$next_tuesday.tex"
+if [ ! -f "$filename" ]; then
+    echo Creating new presentation
+    cp template.tex $filename
+    sed -i "s/Date/$next_tuesday/" $filename
+fi
+nvim $filename
