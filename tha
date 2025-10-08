@@ -94,14 +94,14 @@ esac
 
 
 if $automations; then
-    lastname="$(echo "$tabbed" | grep -e '^    author' | sed 's/author = {*\([A-Za-z ]*\)[},\.].*/\1/' | tr '[:upper:]' '[:lower:]')"
+    lastname="$(echo "$tabbed" | grep -e '^ *author' | sed 's/author *= *{*\([^,]*\)[},\.].*/\1/' | tr '[:upper:]' '[:lower:]')"
     echo "Last name: $lastname"
-    year="$(echo "$tabbed" | grep -e '^    year' | sed 's/year = {\([0-9]*\).*/\1/')"
+    year="$(echo "$tabbed" | grep -e '^ *year' | sed 's/year *= *{\([0-9]*\).*/\1/')"
     echo "Year: $year"
-    title="$(echo "$tabbed" | grep -e '^    title' | sed 's/title = {\(.*\)},$/\1/' | sed 's/://g' | tr '[:upper:]' '[:lower:]')"
+    title="$(echo "$tabbed" | grep -e '^ *title' | sed 's/title *= *{\(.*\)},$/\1/' | sed 's/://g' | tr '[:upper:]' '[:lower:]')"
     echo "Title: $title"
 
-    stopwordlist='a an the with do does by for with to'
+    stopwordlist='a an be by do does for of on the to with'
     list=( $title )
     for word in "${list[@]}"; do
         if [[ ! " $stopwordlist " =~ .*\ $word\ .* ]]; then

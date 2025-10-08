@@ -3,12 +3,13 @@
 title="$1"
 bib_path=~/Documents/theory/sources.bib
 line_number="$(grep -n "{$title}" $bib_path | cut -f1 -d:)"
+# echo $line_number
 line_number=$(( $line_number-1 ))
 line="$(sed "$line_number""q;d" $bib_path)"
 found_bib_key=false
 
 
-while ! $found_bib_key
+while [[ ! $found_bib_key && "$line_number" -gt 0 ]];
 do
     case $line in
         @*)

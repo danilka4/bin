@@ -1,9 +1,13 @@
 #!/bin/sh
 cd ~/Documents/theory/essays/presentations/
 next_tuesday="$(date -d "next Tuesday" +"%Y-%m-%d")"
+if [ "$(date +"%A")" == "Tuesday" ]; then
+    # echo "Today is Tuesday"
+    next_tuesday="$(date +"%Y-%m-%d")"
+fi
 filename="$next_tuesday.tex"
 if [ ! -f "$filename" ]; then
-    echo Creating new presentation
+    echo "Creating new presentation"
     cp template.tex $filename
     sed -i "s/Date/$next_tuesday/" $filename
 fi
