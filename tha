@@ -94,8 +94,13 @@ esac
 
 
 if $automations; then
-    lastname="$(echo "$tabbed" | grep -e '^ *author' | sed 's/author *= *{*\([^,]*\)[},\.].*/\1/' | tr '[:upper:]' '[:lower:]')"
-    echo "Last name: $lastname"
+    lastname="$(echo "$tabbed" | grep -e '^ *author' | sed 's/author *= *{*\([^,]*\)[},\.].*/\1/' | tr '[:upper:]' '[:lower:]' | awk '{$1=$1};1')"
+    # Crimethinc exception
+    echo "Last name: '$lastname'"
+    if [[ "$lastname" == "crimethinc. ex-workers collective}}" ]]; then
+        lastname=crimethinc
+    fi
+    echo "Last name: '$lastname'"
     year="$(echo "$tabbed" | grep -e '^ *year' | sed 's/year *= *{\([0-9]*\).*/\1/')"
     echo "Year: $year"
     title="$(echo "$tabbed" | grep -e '^ *title' | sed 's/title *= *{\(.*\)},$/\1/' | sed 's/://g' | tr '[:upper:]' '[:lower:]')"
