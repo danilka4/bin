@@ -106,7 +106,7 @@ if $automations; then
     title="$(echo "$tabbed" | grep -e '^ *title' | sed 's/title *= *{\(.*\)},$/\1/' | sed 's/://g' | tr '[:upper:]' '[:lower:]')"
     echo "Title: $title"
 
-    stopwordlist='a an be by do does for of on the to with'
+    stopwordlist='a an as be by do does for of in on the to with'
     list=( $title )
     for word in "${list[@]}"; do
         if [[ ! " $stopwordlist " =~ .*\ $word\ .* ]]; then
