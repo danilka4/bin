@@ -95,6 +95,9 @@ esac
 
 if $automations; then
     lastname="$(echo "$tabbed" | grep -e '^ *author' | sed 's/author *= *{*\([^,]*\)[},\.].*/\1/' | tr '[:upper:]' '[:lower:]' | awk '{$1=$1};1')"
+    if [[ $lastname == *" and "* ]]; then
+        lastname="$(echo "$lastname" | sed 's/^[a-z]* ([a-z]*) and .*/\1/' )"
+    fi
     # Crimethinc exception
     echo "Last name: '$lastname'"
     if [[ "$lastname" == "crimethinc. ex-workers collective}}" ]]; then
@@ -106,7 +109,7 @@ if $automations; then
     title="$(echo "$tabbed" | grep -e '^ *title' | sed 's/title *= *{\(.*\)},$/\1/' | sed 's/://g' | tr '[:upper:]' '[:lower:]')"
     echo "Title: $title"
 
-    stopwordlist='a an as be by do does for of in on the to with'
+    stopwordlist='a an as be by do does for has have of in on the to with'
     list=( $title )
     for word in "${list[@]}"; do
         if [[ ! " $stopwordlist " =~ .*\ $word\ .* ]]; then
