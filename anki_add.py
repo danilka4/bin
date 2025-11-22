@@ -20,9 +20,10 @@ for line in sys.stdin:
             content += f"\n{line}"
         else:
             content = line
-
-if not title or lc > 30:
-    print("Exiting")
+if not title:
+    print("Title non-existent")
+elif lc > 30:
+    print("Card too large")
     exit()
 try:
     col = Collection("/home/lizzy/.local/share/Anki2/User 1/collection.anki2")
