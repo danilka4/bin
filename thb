@@ -1,0 +1,15 @@
+#!/bin/sh
+# Args: description + list of links/dois
+if [[ "$#" -le 1 ]]; then
+    echo "Arguments must be thb <description> <doi/link> <doi/link> ..."
+    exit 1
+fi
+
+desc="Found in $1"
+shift # Moves one space
+
+while [[ "$#" -gt 0 ]]; do
+    link="$1"
+    tha "$link" "$desc"
+    shift
+done

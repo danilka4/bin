@@ -2,8 +2,8 @@
 import sys
 import os
 from anki.collection import Collection, ImportCsvRequest, Delimiter
-from anki.syncserver import run_sync_server
-from anki.sync import SyncAuth
+# from anki.syncserver import run_sync_server
+# from anki.sync import SyncAuth
 import tempfile
 import csv
 

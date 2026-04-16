@@ -47,6 +47,11 @@ case ${option} in
         isbn="${option}"
         url="http://openlibrary.org/search.json?q=${isbn}&fields=title,subtitle,author_name,publish_year,publisher,isbn,publish_place"
         ;;
+    *openreview*) echo "openreview"
+        vibes="openreview"
+        url="${option}"
+        number="$(echo "$url" | grep -oP '(?<=id=)[[:alnum:]]+')"
+        ;;
     https://*) echo "url generally"
         vibes="website"
         url="${option}"
@@ -54,7 +59,6 @@ case ${option} in
     *) echo "Crying, pissing, and shitting"
         exit 1
 esac
-
 
 ## Step 2: Obtain bibtex citation + format
 
@@ -77,6 +81,10 @@ case ${vibes} in
         tabbed="$(echo "$art" | python3 -c "import sys, json; a = json.load(sys.stdin); relevant=a['docs'][0]; title=relevant['title']; subtitle = relevant['subtitle'] if 'subtitle' in relevant.keys() else ''; year=relevant['publish_year'][0]; authors=' and '.join([f'{name.split(' ')[1]}, {name.split(' ')[0]}' for name in relevant['author_name']]);publisher=','.join(relevant['publisher']);isbn='$isbn';publish_place=','.join(relevant['publish_place']) if 'publish_place' in relevant.keys() else '';print('@book{heheheha,\n    title = {'+title+'},\n    subtitle = {'+subtitle+'},\n    author = {'+authors+'},\n    year = {'+str(year)+'},\n    publisher = {'+publisher+'},\n    isbn = {'+str(isbn)+'},\n    location = {'+publish_place+'},\n}')")" # removed heheheha because author logic added after
         authomations=true
         ;;
+    "openreview") echo "openreview"
+        tabbed="$(yank_openreview.py $number)"
+        automations=true
+        ;;
     "website")
         tabbed="@online{,
     author = {},
@@ -92,11 +100,29 @@ case ${vibes} in
         exit 1
 esac
 
+if [[ "$tabbed" == *"@misc"* ]] && [[ "$tabbed" == *"arXiv"* ]]; then
+    tabbed="$(echo "$tabbed" | sed 's/@misc/@article/' | sed 's/^}$/    journal = {arXiv preprint},\n    doi = {/')"$number"},
+}"
+fi
+
 
 if $automations; then
     lastname="$(echo "$tabbed" | grep -e '^ *author' | sed 's/author *= *{*\([^,]*\)[},\.].*/\1/' | tr '[:upper:]' '[:lower:]' | awk '{$1=$1};1')"
-    if [[ $lastname == *" and "* ]]; then
+    if [[ "$string" == *","* ]]; then
+        lastname="$(echo "$tabbed" | grep -e '^ *author' | sed 's/author *= *{*\([^,]*\)[},\.].*/\1/' | tr '[:upper:]' '[:lower:]' | awk '{print $2}')"
+    else
+        lastname="$(echo "$tabbed" | grep -e '^ *author' | sed 's/author *= *{*\([^,]*\)[},\.].*/\1/' | tr '[:upper:]' '[:lower:]' | awk '{$1=$1};1')"
+    fi
+    lastname_length=${#lastname}
+    lastname_no_spaces=$(echo "$lastname" | tr -d ' ')  # Remove all spaces
+    lastname_no_spaces_length=${#lastname_no_spaces}
+    if [[ $lastname == *","*" and "* ]]; then
         lastname="$(echo "$lastname" | sed 's/^[a-z]* ([a-z]*) and .*/\1/' )"
+    # Just one space
+    elif [[ $lastname == *" and "* ]]; then
+        lastname="$(echo "$lastname" | awk '{print $2}')"
+elif [[ $(( lastname_length - lastname_no_spaces_length )) -eq 1 ]]; then
+        lastname="$(echo "$lastname" | awk '{print $2}')"
     fi
     # Crimethinc exception
     echo "Last name: '$lastname'"
@@ -106,10 +132,11 @@ if $automations; then
     echo "Last name: '$lastname'"
     year="$(echo "$tabbed" | grep -e '^ *year' | sed 's/year *= *{\([0-9]*\).*/\1/')"
     echo "Year: $year"
-    title="$(echo "$tabbed" | grep -e '^ *title' | sed 's/title *= *{\(.*\)},$/\1/' | sed 's/://g' | tr '[:upper:]' '[:lower:]')"
+    title="$(echo "$tabbed" | grep -e '^ *title' | sed 's/title *= *{\(.*\)},$/\1/' | sed 's/[:“”]//g' | tr '[:upper:]' '[:lower:]' )"
+
     echo "Title: $title"
 
-    stopwordlist='a an as be by do does for has have of in on the to with'
+    stopwordlist='a an are as be by do does from for has have how of in is it on really should sure the to was what who why with you'
     list=( $title )
     for word in "${list[@]}"; do
         if [[ ! " $stopwordlist " =~ .*\ $word\ .* ]]; then
