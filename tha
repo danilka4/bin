@@ -50,7 +50,8 @@ case ${option} in
     *openreview*) echo "openreview"
         vibes="openreview"
         url="${option}"
-        number="$(echo "$url" | grep -oP '(?<=id=)[[:alnum:]]+')"
+        number="$(echo "$url" | grep -oP '(?<=id=)[a-zA-Z0-9_]+')"
+        echo $number
         ;;
     https://*) echo "url generally"
         vibes="website"
