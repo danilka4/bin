@@ -1,14 +1,14 @@
 #!/bin/sh
 cd ~/Documents/theory/essays/presentations/
-next_friday="$(date -d "next Friday" +"%Y-%m-%d")"
+day="$(date -d "next Friday" +"%Y-%m-%d")"
 if [ "$(date +"%A")" == "Friday" ]; then
     # echo "Today is Friday"
-    next_friday="$(date +"%Y-%m-%d")"
+    day="$(date +"%Y-%m-%d")"
 fi
-filename="$next_friday.tex"
+filename="$day.tex"
 if [ ! -f "$filename" ]; then
     echo "Creating new presentation"
     cp template.tex $filename
-    sed -i "s/Date/$next_friday/" $filename
+    sed -i "s/Date/$day/" $filename
 fi
 nvim $filename
