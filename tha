@@ -15,97 +15,26 @@ note_path="/home/lizzy/Documents/theory/notes"
 
 # # Step 1: Figure out whether input DOI, ISBN, title, arxiv
 #
-option="${1}"
-case ${option} in
-    stdin) echo "Reading from stdin"
-        vibes="stdin"
-        ;;
-    *arxiv*) echo "Doing an arxiv"
-        vibes="arxiv"
-        echo "Eat shit, this isn't implemented yet"
-        exit 1
-        ;;
-    *doi*) echo "doi url"
-        vibes="doi"
-        url="${option}"
-        number="$(echo "$url" | sed 's/.*\.org\/\(.*\)/\1/')"
-        echo $url
-        echo $number
-        ;;
-    10.*) echo "doi number"
-        vibes="doi"
-        number="${option}"
-        url="https://doi.org/$number"
-        echo $url
-        echo $number
-        ;;
-    [0-9][0-9][0-9]*) echo "isbn"
-        vibes="isbn"
-        # isbn=0226511928
-        isbn="${option}"
-        url="http://openlibrary.org/search.json?q=${isbn}&fields=title,subtitle,author_name,publish_year,publisher,isbn,publish_place"
-        ;;
-    *openreview*) echo "openreview"
-        vibes="openreview"
-        url="${option}"
-        number="$(echo "$url" | grep -oP '(?<=id=)[a-zA-Z0-9_]+')"
-        echo $number
-        ;;
-    https://*) echo "url generally"
-        vibes="website"
-        url="${option}"
-        ;;
-    *) echo "Crying, pissing, and shitting"
-        exit 1
-esac
-
 ## Step 2: Obtain bibtex citation + format
 
-case ${vibes} in
+option="${1}"
+case ${option} in
     stdin) echo "Doing stdin"
         tabbed="$(</dev/stdin)"
-        automations=true
         ;;
-    "arxiv") echo "Doing an arxiv"
-        echo "Eat shit, this isn't implemented yet"
-        exit 1
+    *) tabbed="$(pull_bib_entry.sh $option)"
+        # Pulls bibtex from not stdin
         ;;
-    "doi") echo "requesting ${url}"
-        art="$(curl -LH "Accept: application/x-bibtex" "${url}")"
-        tabbed="$(echo $art | sed 's/@\([a-zA-Z]*\){\([a-zA-Z0-9_]*\), title/@\1{\2,\n    title/' | sed 's/month=\([a-zA-Z0-9]*\),/month={\1},/'| sed 's/DOI/doi/' | sed 's/ISSN/issn/' | sed 's/}, /},\n    /g' | sed 's/} }/},\n}/' | sed 's/=/ = /')"
-    automations=true
-        ;;
-    "isbn") echo "isbn"
-        art="$(curl $url)"
-        tabbed="$(echo "$art" | python3 -c "import sys, json; a = json.load(sys.stdin); relevant=a['docs'][0]; title=relevant['title']; subtitle = relevant['subtitle'] if 'subtitle' in relevant.keys() else ''; year=relevant['publish_year'][0]; authors=' and '.join([f'{name.split(' ')[1]}, {name.split(' ')[0]}' for name in relevant['author_name']]);publisher=','.join(relevant['publisher']);isbn='$isbn';publish_place=','.join(relevant['publish_place']) if 'publish_place' in relevant.keys() else '';print('@book{heheheha,\n    title = {'+title+'},\n    subtitle = {'+subtitle+'},\n    author = {'+authors+'},\n    year = {'+str(year)+'},\n    publisher = {'+publisher+'},\n    isbn = {'+str(isbn)+'},\n    location = {'+publish_place+'},\n}')")" # removed heheheha because author logic added after
-        authomations=true
-        ;;
-    "openreview") echo "openreview"
-        tabbed="$(yank_openreview.py $number)"
-        automations=true
-        ;;
-    "website")
-        tabbed="@online{,
-    author = {},
-    title = {},
-    year = {},
-    month = {},
-    publisher = {},
-    url = {$url},
-    urldate = {$(date -I)},
-}"
-    automations=false
-        ;;
-    *) echo "How did you get here"
-        exit 1
 esac
+
 
 if [[ "$tabbed" == *"@misc"* ]] && [[ "$tabbed" == *"arXiv"* ]]; then
     tabbed="$(echo "$tabbed" | sed 's/@misc/@article/' | sed 's/^}$/    journal = {arXiv preprint},\n    doi = {/')"$number"},
 }"
 fi
 
-if [ ${2} == "skip_todo" ]; then
+automations=true
+if [[ ${2} == "skip_todo" || "$tabbed" == "@online{,"* ]]; then
     automations=false
 fi
 
