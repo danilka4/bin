@@ -11,7 +11,7 @@ if [[ "$choice" != "" ]]; then
     mv $pdf ~/Documents/theory/readings/$1.pdf
     mv $md  ~/Documents/theory/notes/$1.md
 
-    grep -RiIl "$choice" ~/Documents/theory/* | xargs sed -i "s/$choice/$1/g"
+    grep -RiIlZ "$choice" ~/Documents/theory/* | xargs -0 sed -i "s/$choice/$1/g"
     # find ~/Documents/theory/ -name "$choice*" | sed -e "p;s/$choice/$1/" | xargs -n2 mv
 else
     nvim ~/Documents/theory/notes
