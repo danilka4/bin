@@ -94,6 +94,7 @@ case ${vibes} in
     month = {},
     publisher = {},
     url = {$url},
+    urldate = {$(date -I)},
 }"
     automations=false
         ;;
@@ -156,7 +157,7 @@ fi
 # Step 3: ensure everything is correct through nvim
 
 # A couple enters to ensure whitespacing
-final_entry=$(echo "$tabbed"$'\n'$'\n' | vipe)
+final_entry=$(echo "$tabbed"$'\n'$'\n' | vipe --suffix bib)
 
 if [ -z "${final_entry}" ]; then
     echo "Empty string"
@@ -167,6 +168,14 @@ final_entry=$(echo "$final_entry
 
 ")
 final_key="$(echo "$final_entry" | grep '^@.*' | sed 's/@[a-zA-Z]*{\(.*\),/\1/' )"
+
+if grep -q "{$final_key," "$bib_path"; then
+    echo "Duplicate entry $final_key, try again"
+    sleep 1
+    echo "$final_entry" | tha stdin "${2}"
+    exit 1
+fi
+
 echo "$final_key"
 # Step 4: add to bibliography
 
@@ -204,5 +213,5 @@ fi
 echo "[[notes/$final_key|$final_key]]$description" >> "$todo_path"
 
 # Copies to clipboard
-echo "$final_key" | xclip -selection clipboard
+echo "$final_key" | xargs | xclip -selection clipboard
 nvim "$note_path/$final_key.md"
