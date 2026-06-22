@@ -1,18 +1,32 @@
 #!/bin/sh
 
-choice=$(ls ~/Documents/theory/notes ~/Documents/theory/readings | sed -E 's/\..+$//' | sort -u | dmenu -nb '#445349' -sf '#445349' -sb '#F0C674' -nf '#F0C674')
-if [[ "$choice" != "" ]]; then
-    pdf=$(ls -d ~/Documents/theory/readings/* | grep $choice)
-    # $(zathura $pdf </dev/null >/dev/null 2>&1 & disown -h)
-    mda=$(echo $choice.md)
-    md=~/Documents/theory/notes/$mda
-    #touch $md
-    # nvim $md
-    mv $pdf ~/Documents/theory/readings/$1.pdf
-    mv $md  ~/Documents/theory/notes/$1.md
-
-    grep -RiIlZ "$choice" ~/Documents/theory/* | xargs -0 sed -i "s/$choice/$1/g"
-    # find ~/Documents/theory/ -name "$choice*" | sed -e "p;s/$choice/$1/" | xargs -n2 mv
-else
+bib_file="$HOME/Documents/theory/sources.bib"
+choice=$(ls ~/Documents/theory/notes ~/Documents/theory/readings | sed -E 's/\..+$//' | sort -u | bemenu -nb '#445349' -sf '#445349' -sb '#F0C674' -nf '#F0C674')
+if [[ "$choice" == "" ]]; then
     nvim ~/Documents/theory/notes
+    exit 1
 fi
+
+pdf=$(ls -d ~/Documents/theory/readings/* | grep $choice)
+# $(zathura $pdf </dev/null >/dev/null 2>&1 & disown -h)
+mda=$(echo $choice.md)
+md=~/Documents/theory/notes/$mda
+#touch $md
+# nvim $md
+mv $pdf ~/Documents/theory/readings/$1.pdf
+mv $md  ~/Documents/theory/notes/$1.md
+
+grep -RiIlZ "$choice" ~/Documents/theory/* | xargs -0 sed -i "s/$choice/$1/g"
+
+# Now have to move relevant bibtex entry
+
+# First, find the boundaries
+start_line="$(grep -n "@.*{$1," $bib_file | cut -d: -f1)"
+end_line="$(awk -v start=$start_line "NR >= start && /^}$/ {print NR + 1; exit}" $bib_file)"
+
+# Next extract the text
+extracted_text=$(awk -v s="$start_line" -v e="$end_line" 'NR >= s && NR <= e' $bib_file)
+sed -i "${start_line},${end_line}d" $bib_file
+
+# Next, re-add the bib
+echo "$extracted_text" | tha stdin "skip_todo"

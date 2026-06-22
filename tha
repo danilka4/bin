@@ -105,6 +105,9 @@ if [[ "$tabbed" == *"@misc"* ]] && [[ "$tabbed" == *"arXiv"* ]]; then
 }"
 fi
 
+if [ ${2} == "skip_todo" ]; then
+    automations=false
+fi
 
 if $automations; then
     lastname="$(echo "$tabbed" | grep -e '^ *author' | sed 's/author *= *{*\([^,]*\)[},\.].*/\1/' | tr '[:upper:]' '[:lower:]' | awk '{$1=$1};1')"
@@ -170,8 +173,10 @@ add_to_bib.sh "$final_entry"
 
 # Step 5: add to todo or elsewhere
 
-echo "[[notes/$final_key|$final_key]]$description" >> "$todo_path"
+if [ ${2} != "skip_todo" ]; then
+    echo "[[notes/$final_key|$final_key]]$description" >> "$todo_path"
 
-# Copies to clipboard
-echo "$final_key" | xargs | xclip -selection clipboard
-nvim "$note_path/$final_key.md"
+    # Copies to clipboard
+    echo "$final_key" | xargs | xclip -selection clipboard
+    nvim "$note_path/$final_key.md"
+fi
